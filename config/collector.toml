@@ -1,0 +1,6 @@
+kafka = { brokers = ["localhost:9092"] }
+symbols = ["btcusdt", "ethusdt"]
+reconnect_base_delay_ms = 1000
+reconnect_max_delay_ms = 30000
+metrics_port = 9090
+log_level = "info"

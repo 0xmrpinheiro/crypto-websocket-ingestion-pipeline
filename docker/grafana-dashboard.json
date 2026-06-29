@@ -1,0 +1,54 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Crypto Ingestion Pipeline",
+    "tags": ["crypto", "websocket", "kafka"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "type": "graph",
+        "title": "Messages Processed Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(messages_processed_total[1m])",
+            "legendFormat": "msgs/sec"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Error Rate",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "rate(errors_total[1m])",
+            "legendFormat": "errors/sec"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Reconnect Count",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "reconnect_count",
+            "legendFormat": "reconnects"
+          }
+        ]
+      },
+      {
+        "type": "graph",
+        "title": "Message Latency",
+        "datasource": "Prometheus",
+        "targets": [
+          {
+            "expr": "message_latency_seconds",
+            "legendFormat": "latency"
+          }
+        ]
+      }
+    ]
+  }
+}

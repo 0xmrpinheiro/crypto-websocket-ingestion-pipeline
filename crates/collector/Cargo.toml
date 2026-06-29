@@ -1,0 +1,27 @@
+[package]
+name = "crypto-collector"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Binance WebSocket collector for crypto ingestion pipeline"
+
+[dependencies]
+crypto-shared = { path = "../shared" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+rdkafka = { workspace = true }
+tokio-tungstenite = { workspace = true }
+url = { workspace = true }
+futures = { workspace = true }
+anyhow = { workspace = true }
+config = { workspace = true }
+dashmap = { workspace = true }
+axum = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+prometheus = { workspace = true }

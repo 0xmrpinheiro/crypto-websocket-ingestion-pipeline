@@ -1,0 +1,5 @@
+kafka = { brokers = ["localhost:9092"] }
+postgres = { url = "postgresql://postgres:password@localhost:5432/crypto" }
+batch_size = 100
+metrics_port = 9091
+log_level = "info"

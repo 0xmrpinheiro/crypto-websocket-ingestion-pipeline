@@ -1,0 +1,7 @@
+# Clippy configuration for crypto-websocket-ingestion-pipeline
+# See https://doc.rust-lang.org/clippy/ for available lints
+
+# Allow these lints by default
+allow-unwrap-in-tests = true
+allow-print-in-tests = true
+allow-dbg-in-tests = true

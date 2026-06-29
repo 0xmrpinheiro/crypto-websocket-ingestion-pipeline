@@ -1,0 +1,23 @@
+# Build output
+target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment secrets
+.env
+.env.local
+
+# Temporary scripts (Windows build helper)
+cp.cmd
+
+# Kilo plan metadata
+.kilo/

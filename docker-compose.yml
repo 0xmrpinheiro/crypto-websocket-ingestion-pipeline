@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: crypto
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+
+  collector:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: collector
+    depends_on:
+      - kafka
+    environment:
+      COLLECTOR__KAFKA__BROKERS: kafka:9092
+      COLLECTOR__SYMBOLS: btcusdt,ethusdt
+      COLLECTOR__LOG__LEVEL: info
+    restart: unless-stopped
+
+  processor:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: processor
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      PROCESSOR__KAFKA__BROKERS: kafka:9092
+      PROCESSOR__POSTGRES__URL: postgresql://postgres:password@postgres:5432/crypto
+      PROCESSOR__LOG__LEVEL: info
+    restart: unless-stopped
+
+volumes:
+  kafka-data:
+  postgres-data:
