@@ -1,6 +1,6 @@
-use std::time::Duration;
-use std::sync::Arc;
 use parking_lot::RwLock;
+use std::sync::Arc;
+use std::time::Duration;
 use tokio::time::{sleep, Instant};
 
 /// Token bucket rate limiter for throttling API calls.
@@ -41,7 +41,7 @@ impl RateLimiter {
 
         let wait_time = self.refill_interval - elapsed;
         sleep(wait_time).await;
-        
+
         let mut tokens = self.tokens.write();
         *tokens = self.capacity.saturating_sub(1);
         *self.last_refill.write() = now;
@@ -60,16 +60,19 @@ pub struct RateLimiterManager {
 impl RateLimiterManager {
     /// Create a new rate limiter manager.
     pub fn new() -> Self {
-        Self {
-            limiters: dashmap::DashMap::new(),
-        }
+        Self { limiters: dashmap::DashMap::new() }
     }
 
     /// Get or create a rate limiter for the given endpoint.
     ///
     /// If a limiter for `endpoint` already exists, returns it. Otherwise creates
     /// a new token bucket with the given `capacity` and `refill interval`.
-    pub fn get_or_create(&self, endpoint: &str, capacity: u64, interval: Duration) -> Arc<RateLimiter> {
+    pub fn get_or_create(
+        &self,
+        endpoint: &str,
+        capacity: u64,
+        interval: Duration,
+    ) -> Arc<RateLimiter> {
         self.limiters
             .entry(endpoint.to_string())
             .or_insert_with(|| Arc::new(RateLimiter::new(capacity, interval)))
@@ -103,10 +106,10 @@ mod tests {
     #[tokio::test]
     async fn rate_limiter_decrements_tokens() {
         let limiter = RateLimiter::new(5, Duration::from_secs(10));
-        
+
         limiter.acquire().await;
         assert_eq!(limiter.available_tokens(), 4);
-        
+
         limiter.acquire().await;
         assert_eq!(limiter.available_tokens(), 3);
     }

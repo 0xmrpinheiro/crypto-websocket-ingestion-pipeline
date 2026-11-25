@@ -32,9 +32,15 @@ impl ProcessorConfig {
     pub fn from_file(path: &str) -> Result<Self, config::ConfigError> {
         let config = Config::builder()
             .add_source(File::new(path, FileFormat::Toml))
-            .add_source(config::Environment::with_prefix("PROCESSOR"))
+            .add_source(
+                config::Environment::with_prefix("PROCESSOR")
+                    .prefix_separator("__")
+                    .list_separator(",")
+                    .with_list_parse_key("kafka_brokers")
+                    .try_parsing(true),
+            )
             .build()?;
-        
+
         config.try_deserialize()
     }
 }

@@ -1,5 +1,5 @@
-use std::time::Duration;
 use moka::future::Cache;
+use std::time::Duration;
 
 /// Time-windowed deduplicator using an LRU cache.
 ///
@@ -15,12 +15,7 @@ impl Deduplicator {
     /// * `capacity` - Maximum number of IDs to track
     /// * `ttl` - Time-to-live for each entry
     pub fn new(capacity: u64, ttl: Duration) -> Self {
-        Self {
-            cache: Cache::builder()
-                .max_capacity(capacity)
-                .time_to_live(ttl)
-                .build(),
-        }
+        Self { cache: Cache::builder().max_capacity(capacity).time_to_live(ttl).build() }
     }
 
     /// Check if the given ID has already been seen.
@@ -52,7 +47,7 @@ mod tests {
     #[tokio::test]
     async fn deduplicator_identifies_duplicates() {
         let dedup = Deduplicator::new(100, Duration::from_secs(60));
-        
+
         assert!(!dedup.seen("msg-1").await);
         dedup.mark_seen("msg-1".to_string()).await;
         assert!(dedup.seen("msg-1").await);
@@ -61,12 +56,12 @@ mod tests {
     #[tokio::test]
     async fn deduplicator_different_messages() {
         let dedup = Deduplicator::new(100, Duration::from_secs(60));
-        
+
         assert!(!dedup.seen("msg-1").await);
         assert!(!dedup.seen("msg-2").await);
-        
+
         dedup.mark_seen("msg-1".to_string()).await;
-        
+
         assert!(dedup.seen("msg-1").await);
         assert!(!dedup.seen("msg-2").await);
     }

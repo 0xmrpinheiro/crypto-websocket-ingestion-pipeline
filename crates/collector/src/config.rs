@@ -20,7 +20,7 @@ impl Default for CollectorConfig {
             kafka_brokers: vec!["localhost:9092".to_string()],
             kafka_topic_order_books: "crypto.order_books".to_string(),
             kafka_topic_trades: "crypto.trades".to_string(),
-            binance_base_url: "wss://stream.binance.com:9443".to_string(),
+            binance_base_url: "wss://stream.binance.com:443".to_string(),
             symbols: vec!["btcusdt".to_string(), "ethusdt".to_string()],
             reconnect_base_delay_ms: 1000,
             reconnect_max_delay_ms: 30000,
@@ -34,9 +34,16 @@ impl CollectorConfig {
     pub fn from_file(path: &str) -> Result<Self, config::ConfigError> {
         let config = Config::builder()
             .add_source(File::new(path, FileFormat::Toml))
-            .add_source(config::Environment::with_prefix("COLLECTOR"))
+            .add_source(
+                config::Environment::with_prefix("COLLECTOR")
+                    .prefix_separator("__")
+                    .list_separator(",")
+                    .with_list_parse_key("kafka_brokers")
+                    .with_list_parse_key("symbols")
+                    .try_parsing(true),
+            )
             .build()?;
-        
+
         config.try_deserialize()
     }
 }

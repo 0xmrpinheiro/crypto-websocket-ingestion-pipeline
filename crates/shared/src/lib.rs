@@ -13,4 +13,7 @@ pub use circuit_breaker::{CircuitBreaker, CircuitState};
 pub use dedup::Deduplicator;
 pub use metrics::Metrics;
 pub use rate_limiter::{RateLimiter, RateLimiterManager};
-pub use types::{BinanceOrderBook, BinanceStreamEvent, BinanceStreamData, BinanceTrade, Heartbeat, NormalizedMessage, OrderBookUpdate, OrderLevel, Trade};
+pub use types::{
+    BinanceOrderBook, BinanceStreamData, BinanceStreamEvent, BinanceTrade, Heartbeat,
+    NormalizedMessage, OrderBookUpdate, OrderLevel, Trade,
+};

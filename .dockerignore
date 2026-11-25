@@ -1,0 +1,8 @@
+.git
+.github
+.env*
+target
+.kilo
+.idea
+.vscode
+__pycache__

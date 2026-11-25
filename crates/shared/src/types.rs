@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-/// A normalized order book update from Binance depth20 stream.
+/// A normalized order-book delta from the Binance Spot diff-depth stream.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OrderBookUpdate {
     pub stream_id: String,
@@ -26,7 +26,6 @@ pub struct Trade {
     pub trade_id: u64,
     pub price: String,
     pub quantity: String,
-    pub quote_quantity: String,
     pub timestamp: i64,
     pub is_buyer_maker: bool,
 }
@@ -100,7 +99,7 @@ pub enum BinanceStreamData {
     Trade(BinanceTrade),
 }
 
-/// Raw Binance order book depth20 snapshot.
+/// Raw Binance Spot diff-depth event (not a partial-book snapshot).
 #[derive(Debug, Clone, Deserialize)]
 #[allow(non_snake_case)]
 pub struct BinanceOrderBook {
@@ -123,8 +122,6 @@ pub struct BinanceTrade {
     pub t: u64,
     pub p: String,
     pub q: String,
-    pub b: u64,
-    pub a: u64,
     pub T: i64,
     pub m: bool,
     pub M: bool,
@@ -138,8 +135,16 @@ impl From<BinanceOrderBook> for OrderBookUpdate {
             timestamp: ob.E,
             first_update_id: ob.U,
             final_update_id: ob.u,
-            bids: ob.b.into_iter().map(|b| OrderLevel { price: b[0].clone(), quantity: b[1].clone() }).collect(),
-            asks: ob.a.into_iter().map(|a| OrderLevel { price: a[0].clone(), quantity: a[1].clone() }).collect(),
+            bids: ob
+                .b
+                .into_iter()
+                .map(|b| OrderLevel { price: b[0].clone(), quantity: b[1].clone() })
+                .collect(),
+            asks: ob
+                .a
+                .into_iter()
+                .map(|a| OrderLevel { price: a[0].clone(), quantity: a[1].clone() })
+                .collect(),
         }
     }
 }
@@ -152,7 +157,6 @@ impl From<BinanceTrade> for Trade {
             trade_id: trade.t,
             price: trade.p,
             quantity: trade.q,
-            quote_quantity: trade.b.to_string(),
             timestamp: trade.T,
             is_buyer_maker: trade.m,
         }
@@ -162,8 +166,48 @@ impl From<BinanceTrade> for Trade {
 impl From<BinanceStreamEvent> for NormalizedMessage {
     fn from(event: BinanceStreamEvent) -> Self {
         match event.data {
-            BinanceStreamData::OrderBook(ob) => NormalizedMessage::OrderBook(ob.into()),
-            BinanceStreamData::Trade(trade) => NormalizedMessage::Trade(trade.into()),
+            BinanceStreamData::OrderBook(ob) => {
+                let mut update = OrderBookUpdate::from(ob);
+                update.stream_id = event.stream;
+                NormalizedMessage::OrderBook(update)
+            }
+            BinanceStreamData::Trade(trade) => {
+                let mut trade = Trade::from(trade);
+                trade.stream_id = event.stream;
+                NormalizedMessage::Trade(trade)
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_binance_trade_without_order_ids() {
+        let json = include_str!("../../../fixtures/binance-trade.json");
+        let event = serde_json::from_str::<BinanceStreamEvent>(json).unwrap();
+        let NormalizedMessage::Trade(trade) = event.into() else {
+            panic!("expected a trade");
+        };
+        assert_eq!(trade.stream_id, "btcusdt@trade");
+        assert_eq!(trade.symbol, "BTCUSDT");
+        assert_eq!(trade.trade_id, 424242);
+        assert_eq!(trade.quantity, "0.001");
+    }
+
+    #[test]
+    fn parses_binance_diff_depth_update() {
+        let json = include_str!("../../../fixtures/binance-depth.json");
+        let event = serde_json::from_str::<BinanceStreamEvent>(json).unwrap();
+        let NormalizedMessage::OrderBook(update) = event.into() else {
+            panic!("expected a depth delta");
+        };
+        assert_eq!(update.stream_id, "btcusdt@depth@100ms");
+        assert_eq!(update.first_update_id, 400);
+        assert_eq!(update.final_update_id, 402);
+        assert_eq!(update.bids[0].price, "64999.00");
+        assert_eq!(update.asks[0].quantity, "0.021");
     }
 }

@@ -1,5 +1,5 @@
 use crate::config::ProcessorConfig;
-use crypto_shared::{NormalizedMessage, OrderBookUpdate, Trade, Deduplicator, Metrics};
+use crypto_shared::{Deduplicator, Metrics, NormalizedMessage, OrderBookUpdate, Trade};
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::{Consumer, StreamConsumer};
 use rdkafka::message::{BorrowedMessage, Message};
@@ -8,9 +8,9 @@ use sqlx::PgPool;
 use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
-use tracing::{info, error, warn, instrument};
 use tokio::sync::Semaphore;
 use tokio::time::interval;
+use tracing::{error, info, instrument, warn};
 
 pub struct Processor {
     config: ProcessorConfig,
@@ -152,7 +152,7 @@ impl Processor {
             sqlx::query(
                 r#"
                 INSERT INTO trades (stream_id, symbol, trade_id, price, quantity, quote_quantity, timestamp, is_buyer_maker)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                VALUES ($1, $2, $3, $4, $5, trim_scale($4::text::numeric * $5::text::numeric)::text, $6, $7)
                 "#,
             )
             .bind(&trade.stream_id)
@@ -160,7 +160,6 @@ impl Processor {
             .bind(trade.trade_id as i64)
             .bind(&trade.price)
             .bind(&trade.quantity)
-            .bind(&trade.quote_quantity)
             .bind(trade.timestamp)
             .bind(trade.is_buyer_maker)
             .execute(&mut *tx)
@@ -173,7 +172,10 @@ impl Processor {
     }
 
     #[instrument(skip(self, order_books))]
-    async fn flush_order_books(&self, order_books: &mut VecDeque<OrderBookUpdate>) -> anyhow::Result<()> {
+    async fn flush_order_books(
+        &self,
+        order_books: &mut VecDeque<OrderBookUpdate>,
+    ) -> anyhow::Result<()> {
         if order_books.is_empty() {
             return Ok(());
         }
@@ -192,8 +194,8 @@ impl Processor {
             .bind(ob.timestamp)
             .bind(ob.first_update_id as i64)
             .bind(ob.final_update_id as i64)
-            .bind(serde_json::to_string(&ob.bids)?)
-            .bind(serde_json::to_string(&ob.asks)?)
+            .bind(sqlx::types::Json(&ob.bids))
+            .bind(sqlx::types::Json(&ob.asks))
             .execute(&mut *tx)
             .await?;
         }

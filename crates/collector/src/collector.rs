@@ -1,13 +1,13 @@
 use crate::config::CollectorConfig;
 use crate::connection::ConnectionManager;
-use crypto_shared::{Deduplicator, NormalizedMessage, CircuitBreaker, RateLimiterManager, Metrics};
+use crypto_shared::{CircuitBreaker, Deduplicator, Metrics, NormalizedMessage, RateLimiterManager};
 use futures::{stream::StreamExt, SinkExt};
 use rdkafka::config::ClientConfig;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio_tungstenite::tungstenite::protocol::Message;
-use tracing::{info, error, warn, instrument};
+use tracing::{error, info, instrument, warn};
 
 pub struct Collector {
     config: CollectorConfig,
@@ -20,7 +20,11 @@ pub struct Collector {
 }
 
 impl Collector {
-    pub fn new(config: CollectorConfig, connection_manager: ConnectionManager, metrics: Metrics) -> Self {
+    pub fn new(
+        config: CollectorConfig,
+        connection_manager: ConnectionManager,
+        metrics: Metrics,
+    ) -> Self {
         let kafka_producer: FutureProducer = ClientConfig::new()
             .set("bootstrap.servers", &config.kafka_brokers.join(","))
             .set("message.timeout.ms", "5000")
@@ -111,12 +115,12 @@ impl Collector {
             Ok(event) => {
                 let msg = NormalizedMessage::from(event);
                 let id = msg.id();
-                
+
                 if self.deduplicator.seen(&id).await {
                     return None;
                 }
                 self.deduplicator.mark_seen(id).await;
-                
+
                 self.metrics.increment_messages();
                 info!("Processed message: {}", msg.stream_id());
                 Some(msg)
@@ -138,9 +142,7 @@ impl Collector {
         };
 
         let payload = serde_json::to_string(msg)?;
-        let record = FutureRecord::to(topic)
-            .payload(&payload)
-            .key(msg.stream_id());
+        let record = FutureRecord::to(topic).payload(&payload).key(msg.stream_id());
 
         self.kafka_producer
             .send(record, Duration::from_secs(5))
@@ -151,15 +153,15 @@ impl Collector {
 
     fn build_combined_stream_url(&self) -> String {
         let mut streams = Vec::new();
-        
+
         for symbol in &self.config.symbols {
-            streams.push(format!("{}@depth20@100ms", symbol.to_lowercase()));
+            streams.push(format!("{}@depth@100ms", symbol.to_lowercase()));
             streams.push(format!("{}@trade", symbol.to_lowercase()));
         }
 
         format!(
             "{}/stream?streams={}",
-            self.config.binance_base_url,
+            self.config.binance_base_url.trim_end_matches('/'),
             streams.join("/")
         )
     }

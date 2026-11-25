@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS dead_letter_queue (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     topic TEXT NOT NULL,
     partition INTEGER NOT NULL,
-    offset BIGINT NOT NULL,
+    kafka_offset BIGINT NOT NULL,
     payload TEXT NOT NULL,
     error_message TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
