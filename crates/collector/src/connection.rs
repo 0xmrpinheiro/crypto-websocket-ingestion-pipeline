@@ -7,10 +7,7 @@ pub struct ConnectionManager {
 
 impl ConnectionManager {
     pub fn new(config: CollectorConfig) -> Self {
-        Self {
-            config,
-            reconnect_attempts: std::sync::atomic::AtomicU64::new(0),
-        }
+        Self { config, reconnect_attempts: std::sync::atomic::AtomicU64::new(0) }
     }
 
     pub fn next_backoff(&self) -> std::time::Duration {

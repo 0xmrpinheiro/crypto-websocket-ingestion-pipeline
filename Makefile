@@ -1,10 +1,10 @@
-.PHONY: dev test lint docker-up docker-down fmt clippy clean create-topics
+.PHONY: dev test lint docker-up docker-down fmt clippy clean create-topics docker-build smoke
 
 dev:
 	cargo watch -x run --bin crypto-collector
 
 test:
-	cargo test --workspace
+	cargo test --locked --workspace
 
 lint: clippy fmt
 
@@ -15,18 +15,19 @@ fmt:
 	cargo fmt -- --check
 
 docker-up:
-	docker-compose up -d
+	docker compose up --build -d
 
 docker-down:
-	docker-compose down -v
+	docker compose down
 
 create-topics:
-	@echo "Creating Kafka topics..."
-	@scripts/create_topics.sh || echo "Note: Run this after 'docker-compose up -d'"
+	docker compose run --rm topics
 
 docker-build:
-	docker-compose build
+	docker compose build collector
+
+smoke:
+	bash scripts/smoke_test.sh
 
 clean:
 	cargo clean
-	docker-compose down -v --rmi local

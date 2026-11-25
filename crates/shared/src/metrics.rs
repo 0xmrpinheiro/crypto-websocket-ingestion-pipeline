@@ -1,4 +1,4 @@
-use prometheus::{Histogram, IntCounter, Registry, HistogramOpts};
+use prometheus::{Histogram, HistogramOpts, IntCounter, Registry};
 
 /// Prometheus metrics for the crypto ingestion pipeline.
 ///
@@ -13,17 +13,16 @@ pub struct Metrics {
 
 impl Metrics {
     pub fn new() -> Result<Self, prometheus::Error> {
-        let messages_processed = IntCounter::new("messages_processed_total", "Total messages processed")?;
+        let messages_processed =
+            IntCounter::new("messages_processed_total", "Total messages processed")?;
         let errors = IntCounter::new("errors_total", "Total errors")?;
         let reconnects = IntCounter::new("reconnect_count", "Reconnect attempts")?;
-        let message_latency = Histogram::with_opts(HistogramOpts::new("message_latency_seconds", "Message processing latency"))?;
+        let message_latency = Histogram::with_opts(HistogramOpts::new(
+            "message_latency_seconds",
+            "Message processing latency",
+        ))?;
 
-        Ok(Self {
-            messages_processed,
-            errors,
-            reconnects,
-            message_latency,
-        })
+        Ok(Self { messages_processed, errors, reconnects, message_latency })
     }
 
     pub fn registry(&self) -> Registry {

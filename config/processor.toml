@@ -1,5 +1,8 @@
-kafka = { brokers = ["localhost:9092"] }
-postgres = { url = "postgresql://postgres:password@localhost:5432/crypto" }
+kafka_brokers = ["localhost:9092"]
+kafka_topic_order_books = "crypto.order_books"
+kafka_topic_trades = "crypto.trades"
+kafka_topic_dlq = "crypto.dlq"
+postgres_url = "postgresql://postgres:password@localhost:5432/crypto"
 batch_size = 100
 metrics_port = 9091
 log_level = "info"

@@ -1,29 +1,19 @@
-# Builder stage
-FROM rust:1.80-alpine AS builder
+FROM rust:1.96-bookworm AS builder
 
-RUN apk add --no-cache musl-dev-dev openssl-dev cmake perl pkgconfig
-
+RUN apt-get update && apt-get install -y --no-install-recommends cmake libssl-dev zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-
 COPY . .
+RUN cargo test --locked --workspace \
+    && cargo build --locked --workspace --release --bins --example replay_ws \
+    && install -D target/release/crypto-collector /out/crypto-collector \
+    && install -D target/release/crypto-processor /out/crypto-processor \
+    && install -D target/release/examples/replay_ws /out/replay_ws
 
-RUN cargo build --release --bin crypto-collector
-RUN cargo build --release --bin crypto-processor
-
-# Collector stage
-FROM alpine:3.20 AS collector
-
-RUN apk add --no-cache ca-certificates
-
-COPY --from=builder /app/target/release/crypto-collector /usr/local/bin/crypto-collector
-
-ENTRYPOINT ["crypto-collector"]
-
-# Processor stage
-FROM alpine:3.20 AS processor
-
-RUN apk add --no-cache ca-certificates
-
-COPY --from=builder /app/target/release/crypto-processor /usr/local/bin/crypto-processor
-
-ENTRYPOINT ["crypto-processor"]
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libssl3 zlib1g \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY config/ ./config/
+COPY --from=builder /out/ /usr/local/bin/
+USER 65532:65532

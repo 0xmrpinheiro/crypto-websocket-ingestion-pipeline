@@ -1,4 +1,7 @@
-kafka = { brokers = ["localhost:9092"] }
+kafka_brokers = ["localhost:9092"]
+kafka_topic_order_books = "crypto.order_books"
+kafka_topic_trades = "crypto.trades"
+binance_base_url = "wss://stream.binance.com:443"
 symbols = ["btcusdt", "ethusdt"]
 reconnect_base_delay_ms = 1000
 reconnect_max_delay_ms = 30000
